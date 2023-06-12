@@ -142,9 +142,9 @@ if __name__ == '__main__':
 
     # init learner
     if args.method == 'MAML':
-        method = MAML(args, args.config).to(args.device)
+        method = MAML(args).to(args.device)
     elif args.method == 'Hierarchical_MAML':
-        method = H_MAML(args, args.config).to(args.device)
+        method = H_MAML(args).to(args.device)
     elif args.method == 'Hierarchical_ProtoNet':
         method = H_ProtoNet(args).to(args.device)
     elif args.method == 'ProtoNet':

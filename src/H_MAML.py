@@ -413,21 +413,9 @@ class H_MAML(nn.Module):
                 self.net.vars[i].grad = total_grad[i] / task_cluster_batch_num
             self.meta_optim.step()
 
-        if self.dataset == 'sinusoid':
-            return [[loss_q_batch.cpu().numpy() for loss_q_batch in loss_q_batch_task] for loss_q_batch_task in
-                    loss_q_batch_list], acc_q_batch_list, [[mid_grad_row.cpu().numpy() for mid_grad_row in mid_grad] for
-                                                           mid_grad in mid_grad_batch_list]
-        elif self.dataset == 'omniglot':
-            return [[loss_q_batch.cpu().numpy() for loss_q_batch in loss_q_batch_task] for loss_q_batch_task in
-                    loss_q_batch_list], acc_q_batch_list, [[mid_grad_row.cpu().numpy() for mid_grad_row in mid_grad] for
-                                                           mid_grad in mid_grad_batch_list]
-        elif self.dataset == 'miniimagenet' or self.dataset == 'imagenet-1k':
-            return [[loss_q_batch.cpu().numpy() for loss_q_batch in loss_q_batch_task] for loss_q_batch_task in
-                    loss_q_batch_list], acc_q_batch_list, [[mid_grad_row.cpu().numpy() for mid_grad_row in mid_grad] for
-                                                           mid_grad in mid_grad_batch_list]
-        else:
-            raise NotImplementedError
-
+        return [[loss_q_batch.cpu().numpy() for loss_q_batch in loss_q_batch_task] for loss_q_batch_task in
+                loss_q_batch_list], acc_q_batch_list, [[mid_grad_row.cpu().numpy() for mid_grad_row in mid_grad] for
+                                                       mid_grad in mid_grad_batch_list]
 
 
 def main():

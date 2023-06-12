@@ -191,7 +191,53 @@ class Options():
                 ('linear', [args.n_way, 32 * 5 * 5])
             ]
         elif args.dataset == 'domainnet':
-            args.config = 1
+            args.config = [
+                # prep
+                ('conv2d', [64, 3, 3, 3, 1, 1]),
+                ('relu', [True]),
+                ('bn', [64]),
+                # head 1
+                ('conv2d', [128, 64, 3, 3, 1, 1]),
+                ('relu', [True]),
+                ('bn', [128]),
+                ('max_pool2d', [2, 2, 0]),
+                # head save
+                ('head',[]),
+                # res
+                ('conv2d', [128, 128, 3, 3, 1, 1]),
+                ('relu', [True]),
+                ('bn', [128]),
+                ('conv2d', [128, 128, 3, 3, 1, 1]),
+                ('relu', [True]),
+                ('bn', [128]),
+                # connect
+                ('concat',[]),
+                # layer2
+                ('conv2d', [256, 128, 3, 3, 1, 1]),
+                ('relu', [True]),
+                ('bn', [256]),
+                ('max_pool2d', [2, 2, 0]),
+                # head2
+                ('conv2d', [512, 256, 3, 3, 1, 1]),
+                ('relu', [True]),
+                ('bn', [512]),
+                ('max_pool2d', [2, 2, 0]),
+                # head save
+                ('head', []),
+                # res2
+                ('conv2d', [512, 512, 3, 3, 1, 1]),
+                ('relu', [True]),
+                ('bn', [512]),
+                ('conv2d', [512, 512, 3, 3, 1, 1]),
+                ('relu', [True]),
+                ('bn', [512]),
+                # connect
+                ('concat', []),
+                # classifier
+                ('max_pool2d', [4, 1, 0]),
+                ('flatten', []),
+                ('linear', [args.n_way, 320000])
+            ]
         elif args.dataset == 'sinusoid':
             args.config = [
                 ('flatten', [0, 0]),

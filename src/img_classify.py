@@ -759,7 +759,7 @@ class ImgClassification:
         # 参数root暂时不起作用
 
         # save_path = '../data/DomainNet.npy'
-        save_path = '../../../../gyc_data/MAML/DomainNet/DomainNet.npy'
+        save_path = '../data/DomainNet/DomainNet.npy'
 
         if not os.path.isfile(save_path):
             #
