@@ -1,16 +1,22 @@
 import os
 import torch
 import torch.multiprocessing as mp
+from torch.utils.tensorboard import SummaryWriter
+from pathlib import Path
 
 class Tensorboard_manager:
     def __init__(self, logdir):
-        from tensorboardX import SummaryWriter
         import os
 
-        if not os.path.exists(logdir):
-            os.mkdir(logdir)
-        for file in os.listdir(logdir):
-            os.remove(os.path.join(logdir, file))
+#         if not os.path.exists(logdir):
+#             os.mkdir(logdir)
+#         # Remove all files
+#         for file in os.listdir(logdir):
+#             os.remove(os.path.join(logdir, file))
+        # Create a new directory instead.
+        Path(logdir).mkdir(parents=True, exist_ok=True)
+        import shutil
+        shutil.rmtree(logdir)
 
         self.summary_writer = SummaryWriter(logdir, flush_secs=10)
 
@@ -28,7 +34,6 @@ class Tensorboard_manager:
 def change_tfevent_tag_name(file):
     import tensorflow
     import os
-    from tensorboardX import SummaryWriter
     from tensorflow.python.summary.summary_iterator import summary_iterator
 
     summary_writer = SummaryWriter(file[:file.rfind('/')], flush_secs=10)
@@ -42,7 +47,6 @@ def reshape_loss_curve(file):
     # 观测多条损失曲线时，曲线波动导致难以区分性能，这里将曲线整形成单调递减的形式，便于比较收敛速度、收敛点
     import tensorflow
     import os
-    from tensorboardX import SummaryWriter
     from tensorflow.python.summary.summary_iterator import summary_iterator
 
     summary_writer = SummaryWriter(file[:file.rfind('/')], flush_secs=10)
@@ -84,7 +88,6 @@ def save_network(model, save_dir, args):
 
 
 def redraw_step_acc(file):
-    from tensorboardX import SummaryWriter
     from tensorflow.python.summary.summary_iterator import summary_iterator
     import matplotlib.pyplot as plt
     from fnmatch import fnmatch
@@ -167,7 +170,6 @@ def redraw_step_loss_hjy(file, start_index, end_index, bottom_step_num=2,middle_
     :return:
     """
 
-    from tensorboardX import SummaryWriter
     from tensorflow.python.summary.summary_iterator import summary_iterator
     import matplotlib.pyplot as plt
     from fnmatch import fnmatch
@@ -267,7 +269,6 @@ def redraw_step_acc_hjy(file, start_index, end_index, bottom_step_num=2, isShow=
     :return:
     """
 
-    from tensorboardX import SummaryWriter
     from tensorflow.python.summary.summary_iterator import summary_iterator
     import matplotlib.pyplot as plt
     from fnmatch import fnmatch
@@ -392,7 +393,6 @@ def redraw_step_acc_hjy(file, start_index, end_index, bottom_step_num=2, isShow=
 
 
 def draw_compare_step(file1, file2):
-    from tensorboardX import SummaryWriter
     from tensorflow.python.summary.summary_iterator import summary_iterator
     import matplotlib.pyplot as plt
     from fnmatch import fnmatch

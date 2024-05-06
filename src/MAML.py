@@ -24,7 +24,8 @@ class My_thread(Thread):
 
 def thread_wait_other_process(arg_list):
     # 等待结果返回
-    for i, ret in enumerate(arg_list[0]):
+    ret_list = arg_list[0]
+    for i, ret in enumerate(ret_list):
         now_grad, loss, correct = ret.get()
         if i == 0:
             total_grad = list(now_grad)
@@ -42,9 +43,18 @@ def thread_wait_other_process(arg_list):
 
 def thread_run_main_process(arg_list):
     for i in range(arg_list[-1]):
-        now_grad, loss, correct = task_learning(arg_list[0], arg_list[1][i], arg_list[2][i], arg_list[3][i],
-                                                arg_list[4][i], arg_list[5], arg_list[6], arg_list[7], arg_list[8],
-                                                arg_list[9])
+        now_grad, loss, correct = task_learning(
+            arg_list[0],
+            arg_list[1][i],
+            arg_list[2][i],
+            arg_list[3][i],
+            arg_list[4][i],
+            arg_list[5],
+            arg_list[6],
+            arg_list[7],
+            arg_list[8],
+            arg_list[9],
+        )
         if i == 0:
             total_grad = list(now_grad)
             loss_task = list(loss)
@@ -60,7 +70,7 @@ def thread_run_main_process(arg_list):
 
 
 def loss_func(y_pre, y_true, dataset):
-    if dataset == 'sinusoid':
+    if dataset == "sinusoid":
         y_true = y_true.view(y_true.size(0), -1)
         return F.mse_loss(y_pre, y_true)
     else:
@@ -73,13 +83,26 @@ def compute_correct(logits_q, y_true):
     return correct
 
 
-def task_learning(net, x_spt, y_spt, x_qry, y_qry, bottom_lr, bottom_step_num, train_or_test, second_order, dataset):
+def task_learning(
+    net,
+    x_spt,
+    x_qry,
+    y_spt,
+    y_qry,
+    bottom_lr,
+    bottom_step_num,
+    train_or_test,
+    second_order,
+    dataset,
+):
     losses_q = [0 for _ in range(bottom_step_num + 1)]
     corrects_q = [0 for _ in range(bottom_step_num + 1)]
     logits = net(x_spt, vars=None, bn_training=True)
     loss = loss_func(logits, y_spt, dataset)
     grad = torch.autograd.grad(loss, net.parameters())
-    fast_weights = list(map(lambda p: p[1] - bottom_lr * p[0], zip(grad, net.parameters())))
+    fast_weights = list(
+        map(lambda p: p[1] - bottom_lr * p[0], zip(grad, net.parameters()))
+    )
 
     # this is the loss and accuracy before first update
     with torch.no_grad():
@@ -105,7 +128,9 @@ def task_learning(net, x_spt, y_spt, x_qry, y_qry, bottom_lr, bottom_step_num, t
         # 2. compute grad on theta_pi
         grad = torch.autograd.grad(loss, fast_weights, create_graph=bool(second_order))
         # 3. theta_pi = theta_pi - train_lr * grad
-        fast_weights = list(map(lambda p: p[1] - bottom_lr * p[0], zip(grad, fast_weights)))
+        fast_weights = list(
+            map(lambda p: p[1] - bottom_lr * p[0], zip(grad, fast_weights))
+        )
 
         logits_q = net(x_qry, fast_weights, bn_training=True)
         loss_q = loss_func(logits_q, y_qry, dataset)
@@ -113,11 +138,19 @@ def task_learning(net, x_spt, y_spt, x_qry, y_qry, bottom_lr, bottom_step_num, t
         correct = compute_correct(logits_q, y_qry)
         corrects_q[k + 1] += correct
 
-    if train_or_test == 'train':
+    if train_or_test == "train":
         grads = torch.autograd.grad(losses_q[-1], net.parameters())
-        return [grad for grad in grads], [step_loss.detach().cpu().numpy() for step_loss in losses_q], corrects_q
+        return (
+            [grad for grad in grads],
+            [step_loss.detach().cpu().numpy() for step_loss in losses_q],
+            corrects_q,
+        )
     else:
-        return [0], [step_loss.detach().cpu().numpy() for step_loss in losses_q], corrects_q
+        return (
+            [0],
+            [step_loss.detach().cpu().numpy() for step_loss in losses_q],
+            corrects_q,
+        )
 
 
 class MAML(nn.Module):
@@ -150,6 +183,9 @@ class MAML(nn.Module):
         self.second_order = args.second_order
         self.dataset = args.dataset
 
+        self.task_cluster_batch_num = args.task_cluster_batch_num
+        self.task_cluster_batch_num_test = args.task_cluster_batch_num_test
+
     def clip_grad_by_norm_(self, grad, max_norm):
         """
         in-place gradient clipping.
@@ -164,7 +200,7 @@ class MAML(nn.Module):
             param_norm = g.data.norm(2)
             total_norm += param_norm.item() ** 2
             counter += 1
-        total_norm = total_norm ** (1. / 2)
+        total_norm = total_norm ** (1.0 / 2)
 
         clip_coef = max_norm / (total_norm + 1e-6)
         if clip_coef < 1:
@@ -173,90 +209,68 @@ class MAML(nn.Module):
 
         return total_norm / counter
 
-    def forward(self, x_spt, y_spt, x_qry, y_qry, train_or_test):
+    def forward(self, batch, train_or_test):
         """
 
-        :param x_spt:   [b, setsz, c_, h, w]
+        :param x_spt:   [b, setsz, c_, h, w] # num_clusters, num_images, c_, h, w
         :param y_spt:   [b, setsz]
         :param x_qry:   [b, querysz, c_, h, w]
         :param y_qry:   [b, querysz]
         :return:
         """
-
-        if train_or_test == 'train':
+        if train_or_test == "train":
+            task_cluster_batch_num = self.task_cluster_batch_num
             bottom_step_num = self.bottom_step_num
-        elif train_or_test == 'test':
-            bottom_step_num = self.bottom_step_num_test
         else:
-            raise NotImplementedError
-        task_num = len(x_spt)
+        # elif train_or_test == "test":
+            task_cluster_batch_num = self.task_cluster_batch_num_test
+            bottom_step_num = self.bottom_step_num_test
+        num_clusters = batch[0].shape[0]
 
         ret_list = []
-        per_process_do_num = math.ceil(task_num / (self.train_parallel + 1))
 
-        # print("====", per_process_do_num, "  ", task_num, "  ", y_spt.shape)
+        num_clusters = batch[0].shape[0]
+        for i in range(num_clusters):
+            ret_list.append(
+                task_learning(
+                    self.net,
+                    batch[0][i],
+                    batch[1][i],
+                    batch[2][i],
+                    batch[3][i],
+                    self.bottom_lr,
+                    bottom_step_num,
+                    train_or_test,
+                    self.second_order,
+                    self.dataset,
+                )
+            )
 
-        for i in range(per_process_do_num, task_num):
+        for i, ret in enumerate(ret_list):
+            now_grad, loss, correct = ret
+            if i == 0:
+                total_grad = list(now_grad)
+                total_loss = list(loss)
+                total_correct = list(correct)
+            else:
+                for j, row in enumerate(now_grad):
+                    total_grad[j] += row
+                for j, row in enumerate(loss):
+                    total_loss[j] += loss[j]
+                    total_correct[j] += correct[j]
 
-            # print(i)
-
-            ret_list.append(self.task_pool_processer.apply_async(task_learning, (
-                self.net,
-                x_spt[i],
-                y_spt[i],
-                x_qry[i],
-                y_qry[i],
-                self.bottom_lr,
-                bottom_step_num,
-                train_or_test,
-                self.second_order,
-                self.dataset
-            )))
-
-        # 主进程别闲着
-        main_process = My_thread(thread_run_main_process,
-                                 [self.net,
-                                  x_spt[:per_process_do_num],
-                                  y_spt[:per_process_do_num],
-                                  x_qry[:per_process_do_num],
-                                  y_qry[:per_process_do_num],
-                                  self.bottom_lr,
-                                  bottom_step_num,
-                                  train_or_test,
-                                  self.second_order,
-                                  self.dataset,
-                                  per_process_do_num])
-        # 收集其它进程结果
-        other_process = My_thread(thread_wait_other_process, [ret_list])
-
-        main_process.start()
-        other_process.start()
-        main_process.join()
-        other_process.join()
-
-        main_grad, main_loss, main_correct = main_process.get_result()
-        other_grad, other_loss, other_correct = other_process.get_result()
-
-        # 合并主进程与其它进程的返回结果
-        for i, row in enumerate(other_grad):
-            main_grad[i] += row
-        for i, row in enumerate(other_loss):
-            main_loss[i] += other_loss[i]
-            main_correct[i] += other_correct[i]
-
-        total_grad = main_grad
-        total_loss = main_loss
-        total_correct = main_correct
-
-        if train_or_test == 'train':
+        if train_or_test == "train":
             self.meta_optim.zero_grad()
             for i in range(len(total_grad)):
-                self.net.parameters()[i].grad = total_grad[i] / task_num
+                self.net.parameters()[i].grad = total_grad[i] / num_clusters
 
             self.meta_optim.step()
 
-        loss_q = [step_loss / task_num for step_loss in total_loss]
-        acc_q = [step_correct / (task_num * self.k_qry * self.n_way) for step_correct in total_correct]
+        loss_q = [step_loss / num_clusters for step_loss in total_loss]
+        acc_q = [
+            step_correct / (num_clusters * self.k_qry * self.n_way)
+            for step_correct in total_correct
+        ]
 
         return loss_q, acc_q, 0
 
@@ -265,5 +279,5 @@ def main():
     pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

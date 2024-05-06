@@ -1,0 +1,25 @@
+(l2l)  ✘ bjk@miil  ~/H-meta-learning/src   main ±  python img_classify_train.py --epoch=90000 --dataset=miniimagenet --train_split=76 --second_order=1                 /home/bjk/.conda/envs/l2l/lib/python3.9/site-packages/nni/runtime/trial_command_channel/standalone.py:34: RuntimeWarning: Running trial code without runtime. Please check the tutorial if you are new to NNI: https://nni.readthedocs.io/en/stable/tutorials/hpo_quickstart_pytorch/main.html                                                          warnings.warn(warning_message, RuntimeWarning)                                                                                                                           加载数据集                                                                                                                                                                 进入数据集加载中                                                                                                                                                           load from ../data/miniimagenet/miniimagenet.npy                                                                                                                            DB: train (76, 600, 3, 84, 84) test (24, 600, 3, 84, 84)
+开始训练
+  0%|                                                                                                                                            | 0/90001 [00:00<?, ?it/s]step: 0         Train acc: [[0.224, 0.216, 0.24], [0.224, 0.224, 0.248], [0.224, 0.216, 0.232]]
+[2024-02-13 22:26:03] Intermediate result: 0.232  (Index 0)
+Test acc: [[0.16, 0.208, 0.224], [0.16, 0.2, 0.232], [0.16, 0.2, 0.232]]
+  1%|█▍                                                                                                                            | 1000/90001 [12:21<16:03:44,  1.54it/s]step: 1000      Train acc: [[0.152, 0.296, 0.368], [0.144, 0.296, 0.376], [0.128, 0.296, 0.376]]
+[2024-02-13 22:38:21] Intermediate result: 0.384  (Index 1)                                                                                                                Test acc: [[0.184, 0.312, 0.384], [0.176, 0.32, 0.384], [0.16, 0.32, 0.384]]
+  2%|██▊                                                                                                                           | 2000/90001 [23:48<16:28:29,  1.48it/s]step: 2000      Train acc: [[0.312, 0.592, 0.6], [0.312, 0.584, 0.6], [0.312, 0.592, 0.6]]
+[2024-02-13 22:49:48] Intermediate result: 0.44  (Index 2)
+Test acc: [[0.272, 0.344, 0.432], [0.28, 0.36, 0.44], [0.28, 0.352, 0.44]]
+  3%|████▏                                                                                                                         | 3000/90001 [35:32<16:47:04,  1.44it/s]step: 3000      Train acc: [[0.144, 0.784, 0.792], [0.144, 0.792, 0.792], [0.144, 0.792, 0.8]]
+[2024-02-13 23:01:32] Intermediate result: 0.52  (Index 3)
+Test acc: [[0.176, 0.464, 0.52], [0.184, 0.464, 0.528], [0.176, 0.472, 0.52]]
+  4%|█████▌                                                                                                                        | 4000/90001 [47:12<16:07:37,  1.48it/s]step: 4000      Train acc: [[0.208, 0.88, 0.928], [0.208, 0.88, 0.92], [0.2, 0.888, 0.92]]
+[2024-02-13 23:13:12] Intermediate result: 0.424  (Index 4)
+Test acc: [[0.232, 0.392, 0.432], [0.24, 0.4, 0.408], [0.24, 0.4, 0.424]]
+  6%|██████▉                                                                                                                       | 5000/90001 [58:41<15:50:50,  1.49it/s]step: 5000      Train acc: [[0.192, 0.944, 0.992], [0.192, 0.944, 0.992], [0.192, 0.944, 0.992]]
+[2024-02-13 23:24:41] Intermediate result: 0.376  (Index 5)
+Test acc: [[0.304, 0.36, 0.408], [0.304, 0.36, 0.4], [0.304, 0.368, 0.376]]
+  7%|████████▎                                                                                                                   | 6000/90001 [1:10:03<15:17:40,  1.53it/s]step: 6000      Train acc: [[0.104, 0.896, 0.888], [0.112, 0.896, 0.888], [0.112, 0.896, 0.896]]
+[2024-02-13 23:36:03] Intermediate result: 0.464  (Index 6)
+Test acc: [[0.216, 0.456, 0.44], [0.2, 0.44, 0.48], [0.184, 0.448, 0.464]]
+
+
+0.52

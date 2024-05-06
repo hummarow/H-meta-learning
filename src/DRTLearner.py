@@ -13,10 +13,17 @@ def conv1x1(in_planes, out_planes, stride=1):
 
 
 class ResNetDRA(nn.Module):
-
-    def __init__(self, block, layers, zero_init_residual=False,
-                 groups=1, width_per_group=64, replace_stride_with_dilation=None,
-                 norm_layer=None, pretrain=None):
+    def __init__(
+        self,
+        block,
+        layers,
+        zero_init_residual=False,
+        groups=1,
+        width_per_group=64,
+        replace_stride_with_dilation=None,
+        norm_layer=None,
+        pretrain=None,
+    ):
         super(ResNetDRA, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -29,29 +36,35 @@ class ResNetDRA(nn.Module):
             # the 2x2 stride with a dilated convolution instead
             replace_stride_with_dilation = [False, False, False]
         if len(replace_stride_with_dilation) != 3:
-            raise ValueError("replace_stride_with_dilation should be None "
-                             "or a 3-element tuple, got {}".format(replace_stride_with_dilation))
+            raise ValueError(
+                "replace_stride_with_dilation should be None "
+                "or a 3-element tuple, got {}".format(replace_stride_with_dilation)
+            )
         self.groups = groups
         self.base_width = width_per_group
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3,
-                               bias=False)
+        self.conv1 = nn.Conv2d(
+            3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False
+        )
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2,
-                                       dilate=replace_stride_with_dilation[0])
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2,
-                                       dilate=replace_stride_with_dilation[1])
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2,
-                                       dilate=replace_stride_with_dilation[2])
+        self.layer2 = self._make_layer(
+            block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0]
+        )
+        self.layer3 = self._make_layer(
+            block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1]
+        )
+        self.layer4 = self._make_layer(
+            block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2]
+        )
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
         # self.finalLayer = torch.nn.Linear(2048, 5)  # 自己加上的
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
                 # nn.init.constant_(m.weight, 1)
             elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
                 nn.init.constant_(m.weight, 1)
@@ -63,9 +76,9 @@ class ResNetDRA(nn.Module):
 
         self.new_param, self.init_param = [], []
         if pretrain:
-            print('loading pretrain model from %s' % (pretrain))
+            print("loading pretrain model from %s" % (pretrain))
             model = torch.load(pretrain)  # ['state_dict']
-            prefix = 'module.features.'
+            prefix = "module.features."
             new_params = self.state_dict().copy()
             for x in new_params:
                 if prefix + x in model:
@@ -98,7 +111,6 @@ class ResNetDRA(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x, vars=None, bn_training=True):
-
         # 如果传入网络参数不为None，则重新设置网络参数，在forward完成之后得设置回来
         if vars != None:
             temp_para_list = nn.ParameterList(self.parameters())
@@ -106,7 +118,6 @@ class ResNetDRA(nn.Module):
             for params in self.parameters():
                 params.data = vars[i].data.clone()
                 i += 1
-
 
         x = self.conv1(x)
         x = self.bn1(x)
@@ -141,8 +152,9 @@ class BottleneckKDRA(nn.Module):
         super(BottleneckKDRA, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-                               padding=1, bias=False)
+        self.conv2 = nn.Conv2d(
+            planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
+        )
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
@@ -159,10 +171,18 @@ class BottleneckKDRA(nn.Module):
             nn.Linear(self.squeeze, 4, bias=False),
         )
         self.sf = nn.Softmax(dim=1)
-        self.conv_s1 = nn.Conv2d(planes, planes, 1, stride=stride, padding=0, bias=False)
-        self.conv_s2 = nn.Conv2d(planes, planes, 1, stride=stride, padding=0, bias=False)
-        self.conv_s3 = nn.Conv2d(planes, planes, 1, stride=stride, padding=0, bias=False)
-        self.conv_s4 = nn.Conv2d(planes, planes, 1, stride=stride, padding=0, bias=False)
+        self.conv_s1 = nn.Conv2d(
+            planes, planes, 1, stride=stride, padding=0, bias=False
+        )
+        self.conv_s2 = nn.Conv2d(
+            planes, planes, 1, stride=stride, padding=0, bias=False
+        )
+        self.conv_s3 = nn.Conv2d(
+            planes, planes, 1, stride=stride, padding=0, bias=False
+        )
+        self.conv_s4 = nn.Conv2d(
+            planes, planes, 1, stride=stride, padding=0, bias=False
+        )
 
     def forward(self, x):
         b, c, h, w = x.size()
@@ -175,8 +195,12 @@ class BottleneckKDRA(nn.Module):
         out = self.bn1(out)
         out = self.relu(out)
 
-        dyres = self.conv_s1(out) * y[:, 0] + self.conv_s2(out) * y[:, 1] + \
-                self.conv_s3(out) * y[:, 2] + self.conv_s4(out) * y[:, 3]
+        dyres = (
+            self.conv_s1(out) * y[:, 0]
+            + self.conv_s2(out) * y[:, 1]
+            + self.conv_s3(out) * y[:, 2]
+            + self.conv_s4(out) * y[:, 3]
+        )
         out = dyres + self.conv2(out)
 
         out = self.bn2(out)
@@ -196,32 +220,3 @@ class BottleneckKDRA(nn.Module):
 
 def resnet101_dy(pretrain=None):
     return ResNetDRA(BottleneckKDRA, [3, 4, 23, 3], pretrain=pretrain)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

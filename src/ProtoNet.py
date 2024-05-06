@@ -13,13 +13,13 @@ class ProtoNet(nn.Module):
         self.middle_lr = args.middle_lr
         self.k_spt = args.k_spt
 
-        if args.dataset == 'domainnet':
-            self.map = resnet101_dy()
+        if args.dataset == "domainnet":
+            # self.map = resnet101_dy()
+            self.map = First_Map(x_dim=args.channel, first_pooling_size=4)
         else:
             self.map = First_Map(x_dim=args.channel)
 
-        self.optim = torch.optim.Adam(params=self.map.parameters(),
-                                      lr=self.middle_lr)
+        self.optim = torch.optim.Adam(params=self.map.parameters(), lr=self.middle_lr)
 
     def forward(self, x_spt, y_spt, x_qry, y_qry, train_or_test):
         task_num = len(x_spt)
@@ -31,10 +31,9 @@ class ProtoNet(nn.Module):
             self.optim.zero_grad()
             x, y = torch.vstack((x_spt[i], x_qry[i])), torch.cat((y_spt[i], y_qry[i]))
             model_output = self.map(x)
-            loss, acc = loss_fn(model_output, target=y,
-                                n_support=self.k_spt)
+            loss, acc = loss_fn(model_output, target=y, n_support=self.k_spt)
 
-            if train_or_test == 'train':
+            if train_or_test == "train":
                 loss.backward()
                 self.optim.step()
 
