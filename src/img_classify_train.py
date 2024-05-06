@@ -41,11 +41,17 @@ class Trainer:
                 glob.glob(os.path.join(model_dir, "*.pth"))
                 model_path = max(glob.glob(os.path.join(model_dir, "*.pth")), key=os.path.getctime)
             else:
-                model_path = max(glob.glob(os.path.join(args.model_dir, "*.pth")), key=os.path.getctime)
+                try:
+                    model_path = max(glob.glob(os.path.join(args.model_dir, "*.pth")), key=os.path.getctime)
+                except ValueError:
+                    print("No model found in the model directory.")
+                    print("Start from scratch.")
+                    args.start_epoch = 'no'
+                    break
             print("Loading model from: ", model_path)
             self.method = load_network(self.method, model_path, args.device)
             self.args.start_epoch = model_path.split("_")[-1].split(".")[0]
-        elif args.start_epoch != "no":
+        if args.start_epoch != "no":
             if args.holdout:
                 model_path = os.path.join(
                     args.model_dir,
