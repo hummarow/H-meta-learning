@@ -32,7 +32,8 @@ class Trainer:
             self.method = ProtoNet(args).to(args.device)
         else:
             raise NotImplementedError
-
+            
+        self.trainable = True
         if args.start_epoch == "last":
             import glob
             try:
@@ -46,11 +47,13 @@ class Trainer:
                 print("Loading model from: ", model_path)
                 self.method = load_network(self.method, model_path, args.device)
                 self.args.start_epoch = model_path.split("_")[-1].split(".")[0]
+                if args.start_epoch >= args.epoch:
+                    self.trainable = False
+
             except ValueError:
                 print("No model found in the model directory.")
                 print("Start from scratch.")
                 args.start_epoch = 'no'
-
         if args.start_epoch != "no":
             if args.holdout:
                 model_path = os.path.join(
@@ -406,7 +409,7 @@ if __name__ == "__main__":
         print(f"Test domain: {test_domain.name}")
         args.test_domain = test_domain
         trainer = Trainer(args)
-        if (not args.test) and (args.holdout or i == 0):
+        if (not args.test) and (args.holdout or i == 0) and (not Trainer.trainable):
             acc = trainer.train()
             if not args.fast_mode:
                 last_test_acc_per_domain[test_domain.name] = acc
