@@ -353,7 +353,7 @@ class Options:
         if args.load_model_name == "":
             args.load_model_name = f"{args.scheme_name}_best.pth"
 
-        if args.start_epoch != "no":
+        if args.start_epoch.isdigit():
             args.load_model_dir = os.path.join(
                 args.model_dir,
                 args.scheme_name + "_" + str(args.start_epoch) + ".pth",

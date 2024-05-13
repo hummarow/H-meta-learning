@@ -34,7 +34,8 @@ class Trainer:
             raise NotImplementedError
             
         self.trainable = True
-        if args.start_epoch == "last":
+        self.start_epoch = args.start_epoch
+        if self.start_epoch == "last":
             import glob
             try:
                 if args.holdout:
@@ -45,29 +46,28 @@ class Trainer:
                 else:
                     model_path = max(glob.glob(os.path.join(args.model_dir, "*.pth")), key=os.path.getctime)
                 print("Loading model from: ", model_path)
+                
                 self.method = load_network(self.method, model_path, args.device)
-                self.args.start_epoch = model_path.split("_")[-1].split(".")[0]
-                if int(self.args.start_epoch) >= args.epoch:
+                self.start_epoch = model_path.split("_")[-1].split(".")[0]
+                if int(self.start_epoch) >= args.epoch:
                     self.trainable = False
-                args.start_epoch = 'no'
                 
 
             except ValueError:
                 print("No model found in the model directory.")
                 print("Start from scratch.")
-                args.start_epoch = 'no'
 
-        if args.start_epoch != "no":
+        if self.start_epoch.isdigit():
             if args.holdout:
                 model_path = os.path.join(
                     args.model_dir,
                     args.test_domain.name,
-                    f"{args.scheme_name}_{args.start_epoch}.pth",
+                    f"{args.scheme_name}_{self.start_epoch}.pth",
                 )
             else:
                 model_path = os.path.join(
                     args.model_dir,
-                    f"{args.scheme_name}_{args.start_epoch}.pth",
+                    f"{args.scheme_name}_{self.start_epoch}.pth",
                 )
             self.method = load_network(self.method, model_path, args.device)
 
@@ -113,6 +113,7 @@ class Trainer:
                 model_dir,
                 self.args.scheme_name + "_best.pth",
             )
+        
         self.max_test_task = args.max_test_task
 
         self.fast_mode = args.fast_mode
@@ -129,8 +130,8 @@ class Trainer:
 
     def train(self):
         # train
-        if self.args.start_epoch != "no":
-            begin_epoch = int(self.args.start_epoch) + 1
+        if self.start_epoch != "no":
+            begin_epoch = int(self.start_epoch) + 1
         else:
             begin_epoch = 0
 
@@ -412,7 +413,7 @@ if __name__ == "__main__":
         print(f"Test domain: {test_domain.name}")
         args.test_domain = test_domain
         trainer = Trainer(args)
-        if (not args.test) and (args.holdout or i == 0) and (not trainer.trainable):
+        if (not args.test) and (args.holdout or i == 0) and (trainer.trainable):
             acc = trainer.train()
             if not args.fast_mode:
                 last_test_acc_per_domain[test_domain.name] = acc
