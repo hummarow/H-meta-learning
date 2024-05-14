@@ -56,6 +56,7 @@ class Trainer:
             except ValueError:
                 print("No model found in the model directory.")
                 print("Start from scratch.")
+                self.start_epoch = "no"
 
         if self.start_epoch.isdigit():
             if args.holdout:
