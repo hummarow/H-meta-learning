@@ -281,9 +281,9 @@ class Options:
             "--fast_mode", action="store_true", help="fast mode", default=False,
         )
 
-        self.argparser.add_argument(
-            "--domains", nargs="+", help="domains", default=[], required=False
-        )
+        # self.argparser.add_argument(
+        #     "--domains", nargs="+", help="domains", default=[], required=False
+        # )
 
         self.argparser.add_argument(
             "--reptile", action="store_true", help="reptile", default=False

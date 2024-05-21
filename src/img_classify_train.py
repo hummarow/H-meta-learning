@@ -390,6 +390,9 @@ if __name__ == "__main__":
     args.batch_size = 1
     from data.dataset_utils import DatasetEnum
 
+    ########################
+    args.domains = args.test_domains
+    #######################
     clusters = DatasetEnum[args.datasets].get_clusters()
     if args.domains:
         _cluster_names = {d.name:d for d in clusters}
