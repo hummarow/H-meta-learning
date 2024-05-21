@@ -390,9 +390,6 @@ if __name__ == "__main__":
     args.batch_size = 1
     from data.dataset_utils import DatasetEnum
 
-    ########################
-    args.domains = args.test_domains
-    #######################
     clusters = DatasetEnum[args.datasets].get_clusters()
     if args.domains:
         _cluster_names = {d.name:d for d in clusters}
@@ -414,7 +411,10 @@ if __name__ == "__main__":
     print(f"K-query: {args.num_shots_test}")
 
     for i, test_domain in enumerate(clusters):
+        if test_domain.name not in args.test_domains:
+            continue
         print(f"Test domain: {test_domain.name}")
+
         args.test_domain = test_domain
         trainer = Trainer(args)
         if (not args.test) and (args.holdout or i == 0) and (trainer.trainable):
@@ -433,6 +433,8 @@ if __name__ == "__main__":
         )
 
     for test_domain in clusters:
+        if test_domain.name not in accs_per_domain:
+            continue
         print(
             f"Test accuracy for {test_domain.name}: {accs_per_domain[test_domain.name]}"
         )
