@@ -242,6 +242,11 @@ class Options:
             default=3,
         )
         self.argparser.add_argument(
+            "--check_clusters",
+            action='store_true',
+            default=False,
+        )
+        self.argparser.add_argument(
             "--contrastive_step_num_test",
             type=int,
             help="contrastive learning step",

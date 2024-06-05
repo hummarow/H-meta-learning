@@ -45,7 +45,7 @@ class Trainer:
                     model_path = max(glob.glob(os.path.join(model_dir, "*.pth")), key=os.path.getctime)
                 else:
                     model_path = max(glob.glob(os.path.join(args.model_dir, "*.pth")), key=os.path.getctime)
-                print("Loading model from: ", model_path)
+                print("Last model path: ", model_path)
                 
                 self.method = load_network(self.method, model_path, args.device)
                 self.start_epoch = model_path.split("_")[-1].split(".")[0]
@@ -135,14 +135,14 @@ class Trainer:
             begin_epoch = int(self.start_epoch) + 1
         else:
             begin_epoch = 0
-
+        loss_U_best = 1000
+        loss_M_best = 1000
         for step in range(begin_epoch, self.args.epoch + 1):
             loss_list, acc_list, mid_grad_list = self.epoch(step, mode="train")
-
             if step % self.print_freq == 0:
                 print(f"step: {step}/{self.args.epoch} \tTrain acc: {acc_list}")
                 report_train_test_metric(
-                    step, acc_list, loss_list, mid_grad_list, self.args.method, "train"
+                    step, acc_list, loss_list, mid_grad_list, self.args.method, "train", self.args
                 )
                 # Calculate average accuracy and loss
                 if self.is_hierarchical:
@@ -154,12 +154,12 @@ class Trainer:
                     self.avg_train_acc.append(acc_list[-1])
                     self.avg_train_loss.append(loss_list[-1])
 
-                loss, acc = self.test("valid", load_best=False)
+                loss, acc = self.test(step, "valid", load_best=False)
                 self.avg_val_acc.append(acc)
                 self.avg_val_loss.append(loss)
 
                 if not self.fast_mode:
-                    loss, acc = self.test("test", load_best=False)
+                    loss, acc = self.test(step, "test", load_best=False)
                     self.avg_test_acc.append(acc)
                     self.avg_test_loss.append(loss)
 
@@ -180,11 +180,15 @@ class Trainer:
                 #         self.args,
                 #     )
                 if self.avg_val_loss[-1] == min(self.avg_val_loss):
+                    if self.is_hierarchical:
+                        loss_M_best = loss_list[0][-1]
+                        loss_U_best = loss_list[-1][-1]
                     save_network(
                         self.method,
                         self.best_model_path,
                         self.args,
                     )
+
                 if self.holdout:
                     model_path = os.path.join(
                         self.args.model_dir,
@@ -215,11 +219,14 @@ class Trainer:
         
         print(f"Best validation loss: {min_val_loss}")
         print(f"Best validation epoch: {min_val_loss_index * self.print_freq}")
+        print(f"Best U Loss: {loss_U_best}")
+        print(f"Best M Loss: {loss_M_best}")
         return min_val_loss
 
-    def test(self, mode, load_best=False):
+    def test(self, step, mode, load_best=False):
         # load the best model and test
         if load_best:
+            print("Best model path: ", self.best_model_path)
             self.method = load_network(
                 self.method, self.best_model_path, self.args.device
             )
@@ -238,7 +245,7 @@ class Trainer:
                 total_acc_list.append(acc_list[-1])
         loss = np.mean(total_loss_list)
         acc = np.mean(total_acc_list)
-        report_train_test_metric(0, [acc], [loss], [0], self.args.method, mode)
+        report_train_test_metric(step, [acc], [loss], [0], self.args.method, mode, self.args)
         return loss, acc
 
     def epoch(self, step, mode="train"):
@@ -316,7 +323,7 @@ class Trainer:
         return loss_list, acc_list, mid_grad_list
 
 
-def report_train_test_metric(step, acc_list, loss_list, mid_grad_list, method, mode):
+def report_train_test_metric(step, acc_list, loss_list, mid_grad_list, method, mode, args):
     if method == "MAML":
         for i, acc in enumerate(acc_list):
             tb_manager.update_graph(step, {f"{mode}_acc_{i}": acc})
@@ -324,29 +331,38 @@ def report_train_test_metric(step, acc_list, loss_list, mid_grad_list, method, m
             tb_manager.update_graph(step, {f"{mode}_loss_{i}": loss})
 
     elif method == "Hierarchical_MAML":
+        prefix = f"{mode}" if not args.holdout else f"{mode}_{args.test_domain.name}"
         for i, acc_task in enumerate(acc_list):
             if isinstance(acc_task, list):
+                tb_manager.update_graph(step, {f"{prefix}_M_acc": acc_task[0][-1]})
+                tb_manager.update_graph(step, {f"{prefix}_U_acc": acc_task[-1][-1]})
+                print(f"{prefix}_M_acc: {acc_task[0][-1]}")
+                print(f"{prefix}_U_acc: {acc_task[-1][-1]}")
                 for j, acc in enumerate(acc_task):
-                    tb_manager.update_graph(step, {f"{mode}_acc_{i}_{j}": acc})
+                    tb_manager.update_graph(step, {f"{prefix}_acc_{i}_{j}": acc})
             else:
-                tb_manager.update_graph(step, {f"{mode}_acc_{i}_avg": acc_task})
+                tb_manager.update_graph(step, {f"{prefix}_acc_{i}_avg": acc_task})
         for i, loss_task in enumerate(loss_list):
             if isinstance(loss_task, list):
+                tb_manager.update_graph(step, {f"{prefix}_M_loss": loss_task[0][-1]})
+                tb_manager.update_graph(step, {f"{prefix}_U_loss": loss_task[-1][-1]})
+                print(f"{prefix}_M_loss: {loss_task[0][-1]}")
+                print(f"{prefix}_U_loss: {loss_task[-1][-1]}")
                 for j, loss in enumerate(loss_task):
-                    tb_manager.update_graph(step, {f"{mode}_loss_{i}_{j}": loss})
+                    tb_manager.update_graph(step, {f"{prefix}_loss_{i}_{j}": loss})
             else:
-                tb_manager.update_graph(step, {f"{mode}_loss_{i}_avg": loss_task})
+                tb_manager.update_graph(step, {f"{prefix}_loss_{i}_avg": loss_task})
         for i, mid_grad in enumerate(mid_grad_list):
             if isinstance(mid_grad, list):
                 for j, mid_grad_row in enumerate(mid_grad):
                     tb_manager.summary_writer.add_histogram(
-                        f"{mode}_mid_grad_{i + 1}_{j}",
+                        f"{prefix}_mid_grad_{i + 1}_{j}",
                         mid_grad_row,
                         step,
                     )
             else:
                 tb_manager.summary_writer.add_histogram(
-                    f"{mode}_mid_grad_{i + 1}_avg",
+                    f"{prefix}_mid_grad_{i + 1}_avg",
                     mid_grad,
                     step,
                 )
@@ -402,6 +418,11 @@ if __name__ == "__main__":
     else:
         args.domains = clusters
     clusters = args.domains
+    if not args.test_domains:
+        args.test_domains = [cl.name for cl in clusters]
+    if args.check_clusters:
+        print(clusters)
+        exit()
     accs_per_domain = {}
     last_test_acc_per_domain = {}
 
@@ -421,12 +442,14 @@ if __name__ == "__main__":
             acc = trainer.train()
             if not args.fast_mode:
                 last_test_acc_per_domain[test_domain.name] = acc
-        accs_per_domain[test_domain.name] = trainer.test("test", load_best=True)[1]
+        else:
+            print("Skip training")
+        accs_per_domain[test_domain.name] = trainer.test(-1, "test", load_best=True)[1]
 
     if last_test_acc_per_domain != {}:
         for test_domain in list(last_test_acc_per_domain.keys()):
             print(
-                f"Test accuracy (last) for {test_domain.name}: {last_test_acc_per_domain[test_domain.name]}"
+                f"Test accuracy (last) for {test_domain}: {last_test_acc_per_domain[test_domain]}"
             )
         print(
             f"Average accuracy (last): {np.mean(list(last_test_acc_per_domain.values()))}"
