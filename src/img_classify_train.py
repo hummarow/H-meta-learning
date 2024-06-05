@@ -332,22 +332,24 @@ def report_train_test_metric(step, acc_list, loss_list, mid_grad_list, method, m
 
     elif method == "Hierarchical_MAML":
         prefix = f"{mode}" if not args.holdout else f"{mode}_{args.test_domain.name}"
+        if isinstance(acc_list[0], list):
+            tb_manager.update_graph(step, {f"{prefix}_M_acc": acc_list[0][-1]})
+            tb_manager.update_graph(step, {f"{prefix}_U_acc": acc_list[-1][-1]})
+            print(f"{prefix}_M_acc: {acc_list[0][-1]}")
+            print(f"{prefix}_U_acc: {acc_list[-1][-1]}")
+        if isinstance(loss_list[0], list):
+            tb_manager.update_graph(step, {f"{prefix}_M_loss": loss_list[0][-1]})
+            tb_manager.update_graph(step, {f"{prefix}_U_loss": loss_list[-1][-1]})
+            print(f"{prefix}_M_loss: {loss_list[0][-1]}")
+            print(f"{prefix}_U_loss: {loss_list[-1][-1]}")
         for i, acc_task in enumerate(acc_list):
             if isinstance(acc_task, list):
-                tb_manager.update_graph(step, {f"{prefix}_M_acc": acc_task[0][-1]})
-                tb_manager.update_graph(step, {f"{prefix}_U_acc": acc_task[-1][-1]})
-                print(f"{prefix}_M_acc: {acc_task[0][-1]}")
-                print(f"{prefix}_U_acc: {acc_task[-1][-1]}")
                 for j, acc in enumerate(acc_task):
                     tb_manager.update_graph(step, {f"{prefix}_acc_{i}_{j}": acc})
             else:
                 tb_manager.update_graph(step, {f"{prefix}_acc_{i}_avg": acc_task})
         for i, loss_task in enumerate(loss_list):
             if isinstance(loss_task, list):
-                tb_manager.update_graph(step, {f"{prefix}_M_loss": loss_task[0][-1]})
-                tb_manager.update_graph(step, {f"{prefix}_U_loss": loss_task[-1][-1]})
-                print(f"{prefix}_M_loss: {loss_task[0][-1]}")
-                print(f"{prefix}_U_loss: {loss_task[-1][-1]}")
                 for j, loss in enumerate(loss_task):
                     tb_manager.update_graph(step, {f"{prefix}_loss_{i}_{j}": loss})
             else:
