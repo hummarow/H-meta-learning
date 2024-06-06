@@ -43,6 +43,8 @@ class MetaDatasetsGenerator:
 
         self.ds_name = args.datasets
         self.cluster_name = metadatasets[self.ds_name]
+        self.test_ds_name = args.test_dataset
+        self.test_cluster_name = metadatasets[self.test_ds_name]
 
         self.m_dataset = {
             stage: get_multi_dataset(
@@ -50,11 +52,16 @@ class MetaDatasetsGenerator:
             )
             for stage in self.stages
         }
+        if "test" in self.m_dataset.keys():
+            self.m_dataset["test"] = get_multi_dataset(
+                args, ds_name=self.test_ds_name, split="test", contrastive=contrastive
+            )
         self.n_cluster = len(self.m_dataset[self.stages["train"]].cluster_info)
+        self.test_n_cluster = len(self.m_dataset["test"].cluster_info)
         max_steps = {
             "train": args.epoch,
             "valid": args.max_test_task * self.n_cluster,
-            "test": args.max_test_task * self.n_cluster,
+            "test": args.max_test_task * self.test_n_cluster,
         }  # *self.n_cluster*args.batch_size
         shuffling = {"train": True, "valid": False, "test": False}
         # if contrastive:
@@ -98,6 +105,14 @@ class MetaDatasetsGenerator:
             else:
                 for x in stat_keys_temp:
                     self.stat_keys.append("{}_{}".format(self.cluster_name[i], x))
+        
+        for i in range(self.test_n_cluster + 1):
+            if i == self.test_n_cluster:
+                for x in stat_keys_temp:
+                    self.stat_keys.append("test_{}_{}".format(i, x))
+            else:
+                for x in stat_keys_temp:
+                    self.stat_keys.append("test_{}_{}".format(self.test_cluster_name[i], x))
 
         for x in stat_keys_temp:
             self.stat_keys.append(x)

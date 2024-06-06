@@ -215,6 +215,9 @@ class Options:
             "--dataset", type=str, help="dataset", default="omniglot"
         )
         self.argparser.add_argument(
+            "--test_dataset", type=str, help="dataset", default=""
+        )
+        self.argparser.add_argument(
             "--train_parallel", type=int, help="parallel number of training", default=0
         )
         self.argparser.add_argument(
@@ -244,7 +247,6 @@ class Options:
         self.argparser.add_argument(
             "--check_clusters",
             action='store_true',
-            default=False,
         )
         self.argparser.add_argument(
             "--contrastive_step_num_test",
@@ -252,7 +254,6 @@ class Options:
             help="contrastive learning step",
             default=7,
         )
-
         self.argparser.add_argument(
             "--contrastive_batch_size",
             type=int,
@@ -306,7 +307,8 @@ class Options:
         args.x_range = (float(args.x_range[0]), float(args.x_range[1]))
         args.a_range_test = (float(args.a_range_test[0]), float(args.a_range_test[1]))
         args.p_range_test = (float(args.p_range_test[0]), float(args.p_range_test[1]))
-
+        if args.test_dataset == "":
+            args.test_dataset = args.dataset
         if args.dataset == "omniglot":
             args.imgsz = 28
             args.channel = 1
@@ -363,7 +365,7 @@ class Options:
                 args.model_dir,
                 args.scheme_name + "_" + str(args.start_epoch) + ".pth",
             )
-            args.scheme_name += "_load_from_" + args.start_epoch + "_epoch"
+            # args.scheme_name += "_load_from_" + args.start_epoch + "_epoch"
             args.seed += 1  # 不加这个1就相当于重新用第0个epoch的数据, 最好每用load checkpoint一次就+1
 
         # tensorboard, model, config dir

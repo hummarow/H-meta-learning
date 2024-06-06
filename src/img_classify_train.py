@@ -245,6 +245,7 @@ class Trainer:
                 total_acc_list.append(acc_list[-1])
         loss = np.mean(total_loss_list)
         acc = np.mean(total_acc_list)
+        breakpoint()
         report_train_test_metric(step, [acc], [loss], [0], self.args.method, mode, self.args)
         return loss, acc
 
@@ -401,6 +402,7 @@ if __name__ == "__main__":
 
     # init dataset
     args.datasets = args.dataset
+
     args.max_test_task = 600
     args.num_ways = args.n_way
     args.num_shots = args.k_spt
@@ -408,7 +410,7 @@ if __name__ == "__main__":
     args.batch_size = 1
     from data.dataset_utils import DatasetEnum
 
-    clusters = DatasetEnum[args.datasets].get_clusters()
+    clusters = DatasetEnum[args.test_dataset].get_clusters()
     if args.domains:
         _cluster_names = {d.name:d for d in clusters}
         print(_cluster_names)
