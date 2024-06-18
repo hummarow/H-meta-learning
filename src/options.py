@@ -382,6 +382,11 @@ class Options:
             "../data", args.dataset if args.dataset != "domainnet" else "DomainNet"
         )
 
+        args.inner_lr = args.bottom_lr
+        args.inner_steps = args.bottom_step_num
+        args.meta_lr = args.top_lr
+        args.first_order = True if args.second_order == 0 else False
+
         if args.test_spt_task_from == "meta_test":
             assert bool(args.if_val) is False
 
